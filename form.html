@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Supabase Records on Form Submission</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.min.js"></script> -->
+    <!-- <script type="module"> 
+    import resend from 'https://cdn.jsdelivr.net/npm/resend@3.2.0/+esm'
+    </script> -->
+</head>
+<body>
+
+<div id="formContainer">
+    <!-- Generated form will appear here -->
+</div>
+
+<script>
+// import { Resend } from 'resend';
+// let Resend = require('resend')
+// const Resend = require('resend');
+// const Resend = require('@resend/node-sdk');
+// Function to generate a random string of specified length
+function generateRandomString(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
+// Function to generate a unique value
+function generateUniqueValue(existingValues, length) {
+    let randomValue;
+    do {
+        randomValue = generateRandomString(length);
+    } while (existingValues.includes(randomValue));
+    return randomValue;
+}
+
+        // Example usage
+        const existingValues = ['abc123', 'def456', 'ghi789'];
+        const uniqueValue = generateUniqueValue(existingValues, 6);
+        console.log(uniqueValue);
+
+
+
+const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcGdzYmptcnNqb2Z0cXZub3R0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwNzk1MTY0OCwiZXhwIjoyMDIzNTI3NjQ4fQ.NNTegoYpNnNxUE2Terd9W0QBKf56aNyoFu0Hv2uOu-8';
+
+        var supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        
+    $(document).ready(function() {
+
+
+        // Sample array of form fields
+        const formFields = [
+            { type: 'text', name: '_id', label: '_id' },
+            { type: 'text', name: 'loan_type', label: 'loan_type' },
+            { type: 'text', name: 'loan_offer', label: 'loan_offer' },
+            // { type: 'text', name: 'status', label: 'status' },
+            // { type: 'text', name: 'feedback', label: 'feedback' },
+            { type: 'text', name: 'firstName', label: 'First Name' },
+            { type: 'text', name: 'lastName', label: 'Last Name' },
+            { type: 'email', name: 'email', label: 'Email' },
+            { type: 'password', name: 'password', label: 'Password' },
+            { type: 'checkbox', name: 'subscribe', label: 'Subscribe to Newsletter' }
+            // Add more fields as needed
+        ];
+
+        // Function to generate form HTML
+        function generateForm(fields) {
+            let formHTML = '<form id="dynamicForm">';
+
+            fields.forEach(field => {
+                formHTML += `<div>
+                                <label>${field.label}</label>
+                                <input type="${field.type}" name="${field.name}" id="${field.name}">
+                            </div>`;
+            });
+
+            formHTML += '<button type="submit">Submit</button></form>';
+
+            return formHTML;
+        }
+
+        // Render form on page load
+        $('#formContainer').html(generateForm(formFields));
+        $('#_id').val(uniqueValue)
+
+        // Submit form event
+        $(document).on('submit', '#dynamicForm', async function(event) {
+            event.preventDefault();
+
+            const formData = {};
+            $(this).serializeArray().forEach(field => {
+                formData[field.name] = field.value;
+            });
+
+            try {
+                // console.log(formData)
+                let _id = formData._id
+                let uid = formData.email
+                // let status = formData.status
+                // let feedback = formData.feedback
+                let loan_type = formData.loan_type
+                let loan_offer = formData.loan_offer
+                let _formData = {
+                    _id, uid, loan_type, loan_offer, data: formData
+                }
+                console.log(_formData)
+                const { data, error } = await supabase.from('Applications').insert(_formData);
+
+                if (error) {
+                    console.error('Error updating records:', error.message);
+                    return;
+                }
+
+                console.log('Records updated successfully:', data);
+                  
+                
+
+            } catch (error) {
+                console.error('Error updating records:', error.message);
+            }
+        });
+    });
+</script>
+
+<div id="form2Container">
+    <!-- Generated form will appear here -->
+</div>
+<script>
+     
+     $(document).ready(function() {
+
+
+function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
+    // Fetch the existing value of the column
+    supabase
+        .from(table)
+        .select(columnName)
+        .eq('_id', id)
+        .then(({ data, error }) => {
+            if (error) {
+                console.error('Error fetching column record:', error.message);
+                return;
+            }
+            // Extract the existing value from the fetched data
+            const existingValue = data[0][columnName];
+            // Append the update to the existing value
+            let updatedValue 
+
+            if(existingValue == null){
+                updatedValue = JSON.stringify(valueToAppend);
+            }else{
+                updatedValue = existingValue + "," + JSON.stringify(valueToAppend);
+            }
+            // Update the record with the updated value
+            supabase
+                .from(table)
+                .update({ [columnName]: updatedValue })
+                .eq('_id', id)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('Error updating column record:', error.message);
+                        return;
+                    }
+                    console.log('Column record updated successfully:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating column record:', error.message);
+                });
+        })
+        .catch(error => {
+            console.error('Error fetching column record:', error.message);
+        });
+}
+
+
+
+
+// Function to update a value by ID
+
+// function updateValueById(table, id, updates) {
+//     supabase.from(table)
+//         .update(updates)
+//         .eq('_id', id)
+//         .then(({ data, error }) => {
+//             if (error) {
+//                 console.error('Error updating value:', error.message);
+//                 return;
+//             }
+//             console.log('Value updated successfully:', data);
+//         })
+//         .catch(error => {
+//             console.error('Error updating value:', error.message);
+//         });
+// }
+
+// const table = 'Applications';
+// const id = uniqueValue;/
+
+
+// Sample array of form fields
+const form2Fields = [
+    // { type: 'text', name: '_id', label: '_id' },
+    { type: 'text', name: 'Employment', label: 'Employment' },
+    // Add more fields as needed
+];
+
+// Function to generate form HTML
+function generateForm2(fields) {
+    let formHTML = '<form id="form2">';
+
+    fields.forEach(field => {
+        formHTML += `<div>
+                        <label>${field.label}</label>
+                        <input type="${field.type}" name="${field.name}" id="${field.name}">
+                    </div>`;
+    });
+
+    formHTML += '<button type="submit">Submit</button></form>';
+
+    return formHTML;
+}
+
+// Render form on page load
+$('#form2Container').html(generateForm2(form2Fields));
+
+// Submit form event
+$(document).on('submit', '#form2', async function(event) {
+    event.preventDefault();
+
+    const formData = {};
+    $(this).serializeArray().forEach(field => {
+        formData[field.name] = field.value;
+    });
+
+        const updates =  formData
+        // updateValueById(table, id, updates);
+
+        const table = 'Applications';
+        const id = uniqueValue;
+        const columnName = 'form';
+        const valueToAppend = updates;
+        fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend);
+
+        let uemail = $('#email').val()
+
+          // Send the AJAX request to the server
+          $.ajax({
+                        url: 'http://localhost:3000/application', // Change this URL if your server is hosted elsewhere
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            "from": "applications@resend.dev",
+                            "to": uemail,
+                            "subject": "Application Status Update",
+                            "html": "<p>Dear Applicant,</p><p>Your loan application has been successfully submitted. Here is your application ID: <strong>123456789</strong>.</p><p>You will receive an update within 48 hours regarding the status of your loan approval. Thank you for choosing us.</p>"
+                        }),
+                        success: function(response) {
+                            alert('Email sent successfully!');
+                        },
+                        error: function(xhr, status, error) {
+                            alert('Error sending email: ' + error);
+                        }
+                    });
+                    
+
+    });
+});
+</script>
+
+</body>
+</html>

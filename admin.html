@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Admin Page</h1>
+
+        <table class="w-full border-collapse border border-gray-300">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="px-4 py-2">ID</th>
+                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="recordList"></tbody>
+        </table>
+
+        <!-- Modal -->
+        <div id="myModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 class="text-lg font-semibold mb-2">Selected User Info</h2>
+                <div id="userInfo"></div>
+                <!-- Feedback update form can be added here -->
+                <form id="feedbackForm">
+                    <label for="feedback" class="block">Feedback:</label>
+                    <textarea id="feedback" name="feedback" rows="4" class="w-full bg-gray-100 border border-gray-300 rounded p-2 mb-2"></textarea>
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Update Feedback</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcGdzYmptcnNqb2Z0cXZub3R0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwNzk1MTY0OCwiZXhwIjoyMDIzNTI3NjQ4fQ.NNTegoYpNnNxUE2Terd9W0QBKf56aNyoFu0Hv2uOu-8';
+        
+         supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        $(document).ready(function() {
+            let currentRecord
+            function fetchRecords() {
+                supabase.from('Applications').select('*')
+                    .then(({ data, error }) => {
+                        if (error) {
+                            console.error('Error fetching records:', error.message);
+                            return;
+                        }
+                        renderRecords(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching records:', error.message);
+                    });
+            }
+
+            function renderRecords(records) {
+                const recordList = $('#recordList');
+                recordList.empty();
+
+                $.each(records, function(index, record) {
+                    const row = $('<tr></tr>');
+
+                    const idCell = $('<td></td>').text(record._id);
+                    row.append(idCell);
+
+                    const nameCell = $('<td></td>').text(JSON.stringify(record.data));
+                    row.append(nameCell);
+
+                    const actionsCell = $('<td></td>');
+
+                    const deleteButton = $('<button></button>').text('Feedback').addClass('bg-green-500 text-white py-1 px-2 rounded')
+                        .click(() => displayModal(record));
+                    actionsCell.append(deleteButton);
+
+                    row.append(actionsCell);
+
+                    recordList.append(row);
+                });
+            }
+                const modal = $('#myModal');
+                const userInfo = $('#userInfo');
+
+            function displayModal(record) {
+                const modal = $('#myModal');
+                const userInfo = $('#userInfo');
+                userInfo.empty();
+                // Render selected user info inside modal
+                userInfo.append(`<p>ID: ${record._id}</p>`);
+                userInfo.append(`<p>Name: ${JSON.stringify(record.data)}</p>`);
+                // Display modal
+                modal.css('display', 'block');
+                currentRecord = record
+
+                // Close modal when clicking on close button
+                const span = $('.close')[0];
+                span.onclick = function() {
+                    modal.css('display', 'none');
+                }
+            }
+
+            fetchRecords();
+            $('#feedbackForm').submit(function(event) {
+                    event.preventDefault(); // Prevent default form submission
+
+                    const feedback = $('#feedback').val();
+                    let record = currentRecord
+                    // Update feedback in the database
+                    supabase.from('Applications')
+                        .update({ feedback: feedback })
+                        .eq('_id', record._id)
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error('Error updating feedback:', error.message);
+                                return;
+                            }
+                            let feedbackContent
+                            let feedbackSubject
+
+                             feedbackContent = feedback
+                             feedbackSubject = "Application Status";
+
+                            if(feedback == 'Approved'){
+                             feedbackContent = "<p>Dear Applicant,</p><p>Your loan application with ID: <strong>123456789</strong> has been successfully approved. Here is your application ID: <strong>123456789</strong>.</p><p> Follow the following instructions to claim it. Thank you for choosing us.</p>"
+                             feedbackSubject = "Application Approved";
+                            }
+
+
+                            $.ajax({
+                                url: 'http://localhost:3000/application', // Change this URL if your server is hosted elsewhere
+                                type: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify({
+                                    "from": "applications@resend.dev",
+                                    "to": record.uid,
+                                    "subject": feedbackSubject,
+                                    "html": feedbackContent
+                                }),
+                                success: function(response) {
+                                    alert('Email sent successfully!');
+                                },
+                                error: function(xhr, status, error) {
+                                    alert('Error sending email: ' + error);
+                                }
+                            });
+
+                            console.log('Feedback updated successfully:', data);
+                            // Optionally, you can close the modal after successful update
+                            
+                            modal.css('display', 'none');
+                        })
+                        .catch(error => {
+                            console.error('Error updating feedback:', error.message);
+                        });
+                });
+        });
+    </script>
+
+    <!-- Add CSS for the modal -->
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaaaaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</body>
+</html>
