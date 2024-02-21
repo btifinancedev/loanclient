@@ -60,12 +60,13 @@ const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
 
             if (!uid) {
                 console.error('UID not found in URL');
+                alert("Loan ID is required!")
                 return;
             }
 
             $('#uidDisplay').text(uid);
 
-            supabase.from('Applications').select('*').eq('uid', uid)
+            supabase.from('Applications').select('*').eq('_id', uid)
                 .then(({ data, error }) => {
                     if (error) {
                         console.error('Error fetching data:', error.message);

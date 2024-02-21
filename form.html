@@ -6,14 +6,36 @@
     <title>Update Supabase Records on Form Submission</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- <script src="https://cdn.jsdelivr.net/npm/resend@3.2.0/dist/index.min.js"></script> -->
     <!-- <script type="module"> 
     import resend from 'https://cdn.jsdelivr.net/npm/resend@3.2.0/+esm'
     </script> -->
+    <style>
+        input{
+            /* width: 100%;
+    padding: 5px 20px;
+    border-radius: 14px;
+    box-shadow: -1px 4px 8px 3px #8080805c;
+    border-color: #ccc;
+    margin: 10px 0px;
+    height: 40px;
+    border: none;
+    font-size: 18px; */
+        }
+        #_id, ._id, #dynamicForm > div:nth-child(1){
+            display: none;
+        }
+    </style>
 </head>
-<body>
 
-<div id="formContainer">
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Application Form</h1>
+        <div id="beautifulForm" class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+        
+<div id="formContainer" class="">
     <!-- Generated form will appear here -->
 </div>
 
@@ -23,6 +45,24 @@
 // const Resend = require('resend');
 // const Resend = require('@resend/node-sdk');
 // Function to generate a random string of specified length
+let uniqueValue
+let serverUrl = "https://loanserver-xtmd.onrender.com/application"
+let steps = 1;
+function nextStep(step){
+    if(step == 1){
+        $('#formContainer').hide()
+        $('#form2Container').show()
+    }
+    if(step == 2){
+        $('#form2Container').hide()
+        $('#form3Container').show()
+    }
+    if(step == 3){
+        // alert('sds')
+        $('#form3Container').hide()
+        $('#final').show()
+    }
+}
 function generateRandomString(length) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -43,8 +83,6 @@ function generateUniqueValue(existingValues, length) {
 
         // Example usage
         const existingValues = ['abc123', 'def456', 'ghi789'];
-        const uniqueValue = generateUniqueValue(existingValues, 6);
-        console.log(uniqueValue);
 
 
 
@@ -61,13 +99,19 @@ const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
             { type: 'text', name: '_id', label: '_id' },
             { type: 'text', name: 'loan_type', label: 'loan_type' },
             { type: 'text', name: 'loan_offer', label: 'loan_offer' },
-            // { type: 'text', name: 'status', label: 'status' },
-            // { type: 'text', name: 'feedback', label: 'feedback' },
+            // { type: 'text', name: 'full_name', label: 'Full Name' },
             { type: 'text', name: 'firstName', label: 'First Name' },
             { type: 'text', name: 'lastName', label: 'Last Name' },
             { type: 'email', name: 'email', label: 'Email' },
-            { type: 'password', name: 'password', label: 'Password' },
-            { type: 'checkbox', name: 'subscribe', label: 'Subscribe to Newsletter' }
+            { type: 'text', name: 'phone', label: 'Phone' },
+
+            { type: 'text', name: 'current_address', label: 'Current Address' },
+            { type: 'text', name: 'date_of_birth', label: 'Date of Birth' },
+            { type: 'text', name: 'citizenship', label: 'Citizenship' },
+            { type: 'text', name: 'ssn', label: 'SSN' },
+            { type: 'text', name: 'photoID', label: 'PhotoID' },
+            // { type: 'checkbox', name: 'subscribe', label: 'Subscribe to Newsletter' }
+
             // Add more fields as needed
         ];
 
@@ -75,26 +119,42 @@ const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
         function generateForm(fields) {
             let formHTML = '<form id="dynamicForm">';
 
-            fields.forEach(field => {
-                formHTML += `<div>
-                                <label>${field.label}</label>
-                                <input type="${field.type}" name="${field.name}" id="${field.name}">
-                            </div>`;
-            });
+                fields.forEach(field => {
+                    formHTML += `<div>
+                                    <label class="block text-gray-700 font-bold mb-2">${field.label}</label>
+                                    <input class="block w-full bg-gray-200 text-gray-800 rounded p-2" type="${field.type}" name="${field.name}" id="${field.name}">
+                                </div>`;
+                });
 
-            formHTML += '<button type="submit">Submit</button></form>';
+            formHTML += '<button class="w-40 block mx-auto focus:outline-none py-2 px-5 rounded-lg shadow-sm text-white text-center  hover:bg-gray-600 font-medium border bg-gray-900 mt-5" type="submit" id="step1btn">Next</button></form>';
 
             return formHTML;
         }
 
         // Render form on page load
         $('#formContainer').html(generateForm(formFields));
-        $('#_id').val(uniqueValue)
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const uid = urlParams.get('uid');
+
+            if (!uid) {
+                console.error('UID not found in URL');
+
+                uniqueValue = generateUniqueValue(existingValues, 6);
+                console.log(uniqueValue);
+                // return;
+            }else{
+                uniqueValue = uid
+            }
+
+            // $('#_id').val(uid);
+            $('#_id').val(uniqueValue)
 
         // Submit form event
         $(document).on('submit', '#dynamicForm', async function(event) {
+            // $('#formContainer, #form2Container').hide()
             event.preventDefault();
-
+            nextStep(1)
             const formData = {};
             $(this).serializeArray().forEach(field => {
                 formData[field.name] = field.value;
@@ -130,7 +190,7 @@ const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
     });
 </script>
 
-<div id="form2Container">
+<div id="form2Container" class="hidden">
     <!-- Generated form will appear here -->
 </div>
 <script>
@@ -138,7 +198,7 @@ const supabaseUrl = 'https://hapgsbjmrsjoftqvnott.supabase.co';
      $(document).ready(function() {
 
 
-function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
+    function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
     // Fetch the existing value of the column
     supabase
         .from(table)
@@ -174,6 +234,23 @@ function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
                 .catch(error => {
                     console.error('Error updating column record:', error.message);
                 });
+                
+                
+                supabase
+                .from(table)
+                .update({ "status": "Additional Info Submitted", "feedback": "Additional Info successfully submitted. You will be notified of your feedback"})
+                .eq('_id', id)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('Error updating column record:', error.message);
+                        return;
+                    }
+                    console.log('Column record updated successfully:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating column record:', error.message);
+                });
+
         })
         .catch(error => {
             console.error('Error fetching column record:', error.message);
@@ -209,6 +286,14 @@ function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
 const form2Fields = [
     // { type: 'text', name: '_id', label: '_id' },
     { type: 'text', name: 'Employment', label: 'Employment' },
+    { type: 'text', name: 'employer_name', label: 'Employer Name and Address' },
+    { type: 'text', name: 'job_title', label: 'Job Title' },
+    { type: 'text', name: 'income_details', label: 'Income Details (Salary slips, Tax returns)' },
+    { type: 'text', name: 'employment_duration', label: 'Employment Duration' },
+    { type: 'text', name: 'bank_account_details', label: 'Bank Account Details' },
+    { type: 'text', name: 'income_sources', label: 'Income Sources (Other than employment, if applicable)' },
+    { type: 'text', name: 'tax_information', label: 'Tax Information' },
+    { type: 'text', name: 'existing_debts', label: 'Existing Debts or Liabilities' }
     // Add more fields as needed
 ];
 
@@ -218,12 +303,12 @@ function generateForm2(fields) {
 
     fields.forEach(field => {
         formHTML += `<div>
-                        <label>${field.label}</label>
-                        <input type="${field.type}" name="${field.name}" id="${field.name}">
+                        <label class="block text-gray-700 font-bold mb-2">${field.label}</label>
+                        <input class="block w-full bg-gray-200 text-gray-800 rounded p-2" type="${field.type}" name="${field.name}" id="${field.name}">
                     </div>`;
     });
 
-    formHTML += '<button type="submit">Submit</button></form>';
+    formHTML += '<button class="w-40 block mx-auto focus:outline-none py-2 px-5 rounded-lg shadow-sm text-white text-center  hover:bg-gray-600 font-medium border bg-gray-900 mt-5" type="submit"  id="step2btn">Next</button></form>';
 
     return formHTML;
 }
@@ -234,7 +319,7 @@ $('#form2Container').html(generateForm2(form2Fields));
 // Submit form event
 $(document).on('submit', '#form2', async function(event) {
     event.preventDefault();
-
+    nextStep(2)
     const formData = {};
     $(this).serializeArray().forEach(field => {
         formData[field.name] = field.value;
@@ -253,7 +338,7 @@ $(document).on('submit', '#form2', async function(event) {
 
           // Send the AJAX request to the server
           $.ajax({
-                        url: 'https://loanserver-xtmd.onrender.com/application', // Change this URL if your server is hosted elsewhere
+                        url: serverUrl, // Change this URL if your server is hosted elsewhere
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({
@@ -274,6 +359,196 @@ $(document).on('submit', '#form2', async function(event) {
     });
 });
 </script>
+
+
+
+<div id="form3Container" class="hidden">
+    <!-- Generated form will appear here -->
+</div>
+<script>
+     
+     $(document).ready(function() {
+
+
+    function fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend) {
+    // Fetch the existing value of the column
+    supabase
+        .from(table)
+        .select(columnName)
+        .eq('_id', id)
+        .then(({ data, error }) => {
+            if (error) {
+                console.error('Error fetching column record:', error.message);
+                return;
+            }
+            // Extract the existing value from the fetched data
+            const existingValue = data[0][columnName];
+            // Append the update to the existing value
+            let updatedValue 
+
+            if(existingValue == null){
+                updatedValue = JSON.stringify(valueToAppend);
+            }else{
+                updatedValue = existingValue + "," + JSON.stringify(valueToAppend);
+            }
+            // Update the record with the updated value
+            supabase
+                .from(table)
+                .update({ [columnName]: updatedValue })
+                .eq('_id', id)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('Error updating column record:', error.message);
+                        return;
+                    }
+                    console.log('Column record updated successfully:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating column record:', error.message);
+                });
+
+                supabase
+                .from(table)
+                .update({ "status": "Additional Info Submitted", "feedback": "Additional Info successfully submitted. You will be notified of your feedback"})
+                .eq('_id', id)
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('Error updating column record:', error.message);
+                        return;
+                    }
+                    console.log('Column record updated successfully:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating column record:', error.message);
+                });
+
+        })
+        .catch(error => {
+            console.error('Error fetching column record:', error.message);
+        });
+}
+
+
+
+
+// Function to update a value by ID
+
+// function updateValueById(table, id, updates) {
+//     supabase.from(table)
+//         .update(updates)
+//         .eq('_id', id)
+//         .then(({ data, error }) => {
+//             if (error) {
+//                 console.error('Error updating value:', error.message);
+//                 return;
+//             }
+//             console.log('Value updated successfully:', data);
+//         })
+//         .catch(error => {
+//             console.error('Error updating value:', error.message);
+//         });
+// }
+
+// const table = 'Applications';
+// const id = uniqueValue;/
+
+
+// Sample array of form fields
+const form3Fields = [
+    // { type: 'text', name: '_id', label: '_id' },
+    { type: 'text', name: 'proof_of_address', label: 'Proof of Address (Utility bills, rental agreement)' },
+    { type: 'text', name: 'additional_income_docs', label: 'Additional Income Documentation (For self-employed, freelancers)' },
+    { type: 'text', name: 'bank_statements', label: 'Bank Statements' },
+    { type: 'text', name: 'business_registration_docs', label: 'Business Registration Documents (For business loans)' },
+    { type: 'text', name: 'licenses_and_permits', label: 'Licenses and Permits (For business loans)' },
+    { type: 'text', name: 'financial_statements', label: 'Financial Statements (For business loans)' },
+    { type: 'text', name: 'business_plans_and_projections', label: 'Business Plans and Projections (For business loans)' },
+    { type: 'text', name: 'collateral_information', label: 'Collateral Information (if applicable)' },
+    { type: 'text', name: 'guarantor_information', label: 'Guarantor Information (if applicable)' }
+
+    // Add more fields as needed
+];
+
+// Function to generate form HTML
+function generateform3(fields) {
+    let formHTML = '<form id="form3">';
+
+    fields.forEach(field => {
+        formHTML += `<div>
+                        <label class="block text-gray-700 font-bold mb-2">${field.label}</label>
+                        <input class="block w-full bg-gray-200 text-gray-800 rounded p-2" type="${field.type}" name="${field.name}" id="${field.name}">
+                    </div>`;
+    });
+
+    formHTML += '<button class="w-40 block mx-auto focus:outline-none py-2 px-5 rounded-lg shadow-sm text-white text-center  hover:bg-gray-600 font-medium border bg-gray-900 mt-5" type="submit"  id="step3btn">Submit</button></form>';
+
+    return formHTML;
+}
+
+// Render form on page load
+$('#form3Container').html(generateform3(form3Fields));
+
+// Submit form event
+$(document).on('submit', '#form3', async function(event) {
+    event.preventDefault();
+    nextStep(3)
+
+    const formData = {};
+    $(this).serializeArray().forEach(field => {
+        formData[field.name] = field.value;
+    });
+
+        const updates =  formData
+        // updateValueById(table, id, updates);
+
+        const table = 'Applications';
+        const id = uniqueValue;
+        const columnName = 'form';
+        const valueToAppend = updates;
+        fetchAndUpdateColumnRecord(table, id, columnName, valueToAppend);
+
+        let uemail = $('#email').val()
+
+          // Send the AJAX request to the server
+          $.ajax({
+                        url: serverUrl, // Change this URL if your server is hosted elsewhere
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            "from": "applications@resend.dev",
+                            "to": uemail,
+                            "subject": "Application Status Update",
+                            "html": "<p>Dear Applicant,</p><p>Your loan application has been successfully submitted. Here is your application ID: <strong>123456789</strong>.</p><p>You will receive an update within 48 hours regarding the status of your loan approval. Thank you for choosing us.</p>"
+                        }),
+                        success: function(response) {
+                            alert('Email sent successfully!');
+                        },
+                        error: function(xhr, status, error) {
+                            alert('Error sending email: ' + error);
+                        }
+                    });
+                    
+
+    });
+});
+</script>
+
+<div class="bg-white rounded-lg p-10 flex items-center shadow justify-between hidden" id="final">
+    <div>
+        <svg class="mb-4 h-20 w-20 text-green-500 mx-auto" viewBox="0 0 20 20" fill="currentColor">  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+
+        <h2 class="text-2xl mb-4 text-gray-800 text-center font-bold status"> Application Updated </h2>
+
+        <div class="text-gray-600 mb-8 feedback text-center">
+            Click here to check status.
+        </div>
+
+        <button @click="step = 1" class="w-40 block mx-auto focus:outline-none py-2 px-5 rounded-lg shadow-sm text-center text-gray-600 bg-white hover:bg-gray-100 font-medium border">Back to home</button>
+    </div>
+</div>
+
+</div>
+</div>
 
 </body>
 </html>

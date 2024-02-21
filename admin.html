@@ -7,16 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.0/css/dataTables.dataTables.css" />
+  
+    <script src="https://cdn.datatables.net/2.0.0/js/dataTables.js"></script>
+
 </head>
 <body class="bg-gray-100 p-4">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-2xl font-bold mb-4">Admin Page</h1>
 
-        <table class="w-full border-collapse border border-gray-300">
+        <table class="w-full border-collapse border border-gray-300 logs" id="logs">
             <thead>
                 <tr class="bg-gray-200">
                     <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Data</th>
+                    <th class="px-4 py-2">Loan Type</th>
+                    <th class="px-4 py-2">Loan Offer</th>
                     <th class="px-4 py-2">Actions</th>
                 </tr>
             </thead>
@@ -31,9 +37,11 @@
                 <div id="userInfo"></div>
                 <!-- Feedback update form can be added here -->
                 <form id="feedbackForm">
+                    <label for="Status" class="block">Status:</label>
+                    <input type="text" name="status" rows="4" class="w-full bg-gray-100 border border-gray-300 rounded p-2 mb-2" id="status">
                     <label for="feedback" class="block">Feedback:</label>
                     <textarea id="feedback" name="feedback" rows="4" class="w-full bg-gray-100 border border-gray-300 rounded p-2 mb-2"></textarea>
-                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Update Feedback</button>
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Update </button>
                 </form>
             </div>
         </div>
@@ -61,6 +69,26 @@
                     });
             }
 
+            function renderJson(jsonString) {
+                
+            const jsonObject = JSON.parse(jsonString);
+            let renderedString = '';
+            let count = 0;
+
+            for (const key in jsonObject) {
+                if (Object.hasOwnProperty.call(jsonObject, key)) {
+                    renderedString += `<span><strong>${key}</strong>: ${jsonObject[key]}</span> --- `;
+                    count++;
+                    if (count % 3 === 0) {
+                        renderedString += '<br>';
+                    }
+                }
+            }
+
+            return renderedString.slice(0, -4); // Remove the last ' --- ' before returning
+       }
+
+
             function renderRecords(records) {
                 const recordList = $('#recordList');
                 recordList.empty();
@@ -71,12 +99,20 @@
                     const idCell = $('<td></td>').text(record._id);
                     row.append(idCell);
 
-                    const nameCell = $('<td></td>').text(JSON.stringify(record.data));
+                    const renderedJson = renderJson(JSON.stringify(record.data));
+                    // document.getElementById('renderedJson').innerText = renderedJson;
+
+                    const nameCell = $('<td style="display: flex; flex-direction: row;flex-wrap: wrap;width: 400px;"></td>').html(renderedJson);
                     row.append(nameCell);
 
                     const actionsCell = $('<td></td>');
 
-                    const deleteButton = $('<button></button>').text('Feedback').addClass('bg-green-500 text-white py-1 px-2 rounded')
+                    const loan_type = $('<td></td>').text(record.loan_type);
+                    row.append(loan_type);
+                    const loan_offer = $('<td></td>').text(record.loan_offer);
+                    row.append(loan_offer);
+
+                    const deleteButton = $('<button></button>').text('Update').addClass('bg-green-500 text-white py-1 px-2 rounded')
                         .click(() => displayModal(record));
                     actionsCell.append(deleteButton);
 
@@ -85,6 +121,7 @@
                     recordList.append(row);
                 });
             }
+
                 const modal = $('#myModal');
                 const userInfo = $('#userInfo');
 
@@ -94,7 +131,7 @@
                 userInfo.empty();
                 // Render selected user info inside modal
                 userInfo.append(`<p>ID: ${record._id}</p>`);
-                userInfo.append(`<p>Name: ${JSON.stringify(record.data)}</p>`);
+                // userInfo.append(`<p>Name: ${JSON.stringify(record.data)}</p>`);
                 // Display modal
                 modal.css('display', 'block');
                 currentRecord = record
@@ -111,10 +148,11 @@
                     event.preventDefault(); // Prevent default form submission
 
                     const feedback = $('#feedback').val();
+                    const fstatus = $('#status').val();
                     let record = currentRecord
                     // Update feedback in the database
                     supabase.from('Applications')
-                        .update({ feedback: feedback })
+                        .update({ status: fstatus, feedback: feedback })
                         .eq('_id', record._id)
                         .then(({ data, error }) => {
                             if (error) {
@@ -127,7 +165,7 @@
                              feedbackContent = feedback
                              feedbackSubject = "Application Status";
 
-                            if(feedback == 'Approved'){
+                            if(fstatus == 'Approved'){
                              feedbackContent = "<p>Dear Applicant,</p><p>Your loan application with ID: <strong>123456789</strong> has been successfully approved. Here is your application ID: <strong>123456789</strong>.</p><p> Follow the following instructions to claim it. Thank you for choosing us.</p>"
                              feedbackSubject = "Application Approved";
                             }
@@ -160,7 +198,8 @@
                             console.error('Error updating feedback:', error.message);
                         });
                 });
-        });
+                let table = new DataTable('#logs');
+            });
     </script>
 
     <!-- Add CSS for the modal -->
